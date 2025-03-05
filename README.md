@@ -4,7 +4,7 @@ This is a preliminary (as of March 2025) comparison of the CPU and memory consum
 
 Read on for the details about what the following graph is actually displaying and how it was created :)
 
-![](graphs/2025-03-04-09-04/JavacBenchApp1.svg){width=100%}
+![](graphs/2025-03-04-09-04/JavacBenchApp1.svg)
 
 ### Test modifications
 
@@ -134,7 +134,7 @@ The script expects the the environment variables `LEYDEN_HOME`, `LEYDEN_SRC`, `G
 
 Following are the results for running `JavacBench 1`:
 
-![](graphs/2025-03-04-09-04/JavacBenchApp1.svg){width=100%}
+![](graphs/2025-03-04-09-04/JavacBenchApp1.svg)
 
 The left graph shows the wall clock time for each configuration. "CDS (default)" is Leyden with the default CDS archive created during the build and should be equivalent to the corresponding version of OpenJDK. Its wall clock time is set to 100%. All the other percentage labels denote the relative runtime compared to the "CDS (default)" mode.
 
@@ -142,11 +142,11 @@ The right graph displays the sum of user plus system time for the configurations
 
 The graph for running `JavacBench 100` looks as follows:
 
-![](graphs/2025-03-04-09-04/JavacBenchApp100.svg){width=100%}
+![](graphs/2025-03-04-09-04/JavacBenchApp100.svg)
 
 And finally the graph for compiling 10000 classes with `JavacBench 100`:
 
-![](graphs/2025-03-04-09-04/JavacBenchApp10000.svg){width=100%}
+![](graphs/2025-03-04-09-04/JavacBenchApp10000.svg)
 
 #### Interpreting the results
 
