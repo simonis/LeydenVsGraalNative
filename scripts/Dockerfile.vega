@@ -1,0 +1,7 @@
+FROM node:21 as base
+
+WORKDIR /vega-lite
+
+RUN npm install vega-lite
+
+ENTRYPOINT ["./node_modules/vega-lite/bin/vl2svg"]
