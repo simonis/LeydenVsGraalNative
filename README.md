@@ -132,6 +132,8 @@ The script expects the the environment variables `LEYDEN_HOME`, `LEYDEN_SRC`, `G
 
 ### Results
 
+#### CPU usage
+
 Following are the results for running `JavacBench 1`:
 
 ![](graphs/2025-03-04-09-04/JavacBenchApp1.svg)
@@ -148,6 +150,20 @@ And finally the graph for compiling 10000 classes with `JavacBench 100`:
 
 ![](graphs/2025-03-04-09-04/JavacBenchApp10000.svg)
 
+#### Memory usage
+
+Following are the results for running `JavacBench 1`:
+
+![](graphs/2025-03-04-15-40/JavacBenchAppRSS1.svg)
+
+The graph for running `JavacBench 100` looks as follows:
+
+![](graphs/2025-03-04-15-40/JavacBenchAppRSS100.svg)
+
+And finally the graph for compiling 10000 classes with `JavacBench 100`:
+
+![](graphs/2025-03-04-15-40/JavacBenchAppRSS10000.svg)
+
 #### Interpreting the results
 
 ### Appendix
@@ -159,16 +175,22 @@ Disclaimer: this workflow is quite specific to this exact use case and will hard
 For the CPU time graphs, the raw data files (e.g. [`./data/2025-03-04-09-04/AOT-2025-03-04-09-04.csv`](data/2025-03-04-09-04/AOT-2025-03-04-09-04.csv)) are first processed and converted into [vega-lite](https://vega.github.io/vega-lite/) specification with the help of [`./scripts/ProcessHyperfineResults.java`](scripts/ProcessHyperfineResults.java) as follows:
 
 ```bash
-$ java ./scripts/ProcessHyperfineResults.java 10000 scripts/TemplateJavacBenchAppCPU.json /tmp/JavacBenchApp10000.json build/data/*03-04*.csv
+$ java ./scripts/ProcessHyperfineResults.java 10000 scripts/TemplateJavacBenchAppCPU.json /tmp/JavacBenchApp10000.json ./data/2025-03-04-09-04/*.csv
 ```
 The first argument (i.e. `10000` in this example) is the argument given to the `JavacBenchApp` (because each `.csv` file contains the data for one configuration but for runs with different parameters), the second argument is the vega-lie template file to use, the third argument denotes the output file (i.e. the created vega-lite specification) and the remaining arguments (usually a wildcard expression) are the raw input data files created by [`./scripts/run.sh`](scripts/run.sh)
+
+For the memory consumption graphs, the raw data files (e.g. [`./data/2025-03-04-15-40/AOT-1-2025-03-04-15-40.rss`](data/2025-03-04-15-40/AOT-1-2025-03-04-15-40.rss)) are first processed and converted into [vega-lite](https://vega.github.io/vega-lite/) specification with the help of [`./scripts/ProcessRssResults.java`](scripts/ProcessRssResults.java) as follows:
+
+```bash
+$ java ./scripts/ProcessRssResults.java 10000 scripts/TemplateJavacBenchAppRSS_horizontal.json graphs/2025-03-04-15-40/JavacBenchAppRSS10000.json data/2025-03-04-15-40/*.rss
+```
 
 The vega-lite specifications are then transformed into SVG graphs as follows. First we create a Docker container with the vega-lite toolchain as follows:
 ```bash
 $ docker build -t vega-lite -f scripts/Dockerfile.vega .
 ```
 
-Once the container has been created, we can use it as follows:
+Once the container has been created, we can use it as follows to create SVG graphs from the vega-lite specifications:
 ```bash
 $ docker run --rm -i vega-lite --scale 2 < vega-lite-spec.json > graph.svg
 ```
