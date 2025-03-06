@@ -166,6 +166,12 @@ And finally the graph for compiling 10000 classes with `JavacBench 100`:
 
 #### Interpreting the results
 
+First of all, this benchmark is not strictly measuring startup time or time to peak performance. It measures the end-to-end time of an application from start to exit. However, for a small workload (and leaving out anomalies like [JDK-8349927](https://bugs.openjdk.org/browse/JDK-8349927)) like the compilation of a single class (i.e. `JavacBenchApp 1`) it is still a good approximation for the startup time of `javac`.
+
+Second, the benchmarks were run with the default JVM settings (except for the two Graal EE runs which explicitly select G1 GC). This means that all HotSpot JVMs run with the default G1 GC and a relatively big heap of 2gb/30gb  InitialHeapSize/MaxHeapSize because the machine has plenty of RAM available. This huge heap itself can already result in a measurable startup overhead due to the initialization of the required G1 data structures (see [JDK-8348278](https://bugs.openjdk.org/browse/JDK-8348278) and [JDK-8348270](https://bugs.openjdk.org/browse/JDK-8348270)). Native Image runs with Serial GC by default and only the EE version supports G1 GC.
+
+Looking at the CPU usage for the run with one compilation, we can see that the current Leyden/AOT implementation already cuts down the execution time to 43% while Graal Native Image CE/EE requires just about 9%/6% of the default HotSpot execution time. Notice however, how the HotSpot runs have a ~three times higher user time. This means that there's still a significant amount of concurrent work going on. For the single compilation case, that's mostly JIT activity. That can be verified by looking at the [-XX:+PreloadOnly](https://github.com/openjdk/leyden/pull/44) runs where the user time is not much higher than the wall clock time because it disables profiling and therefore doesn't trigger any recompilations of AOT compiled code (at the cost of less effective code). For the Native Image case, wall clock time is equal to user time because there's no JIT or other concurrent activity going on.
+
 ### Appendix
 
 #### Creating the graphs
