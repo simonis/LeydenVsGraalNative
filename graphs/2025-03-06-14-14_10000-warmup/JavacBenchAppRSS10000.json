@@ -1,13 +1,24 @@
 {
   "$schema": "https://vega.github.io/schema/vega-lite/v3.json",
   "title": {
-    "text" : "JavacBenchApp __ITERATIONS__ __CONFIGURATION__",
+    "text" : "JavacBenchApp 10000 (10000 training iterations)",
     "anchor": "middle",
     "offset": 20
   },
   "data": {
     "values" : [
-__DATA__
+{"type": "CDS (default)", "wall": "3739", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "CDS (static)", "wall": "3772", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "CDS (dynamic)", "wall": "3726", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "Leyden", "wall": "4016", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "Leyden (PreloadOnly)", "wall": "1987", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "AOT", "wall": "3877", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "AOT (PreloadOnly)", "wall": "1992", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "Graal (CE)", "wall": "1870", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "Graal (EE)", "wall": "1063", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "Graal (EE G1)", "wall": "2595", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "Graal (EE PGO)", "wall": "1068", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "Graal (EE G1 PGO)", "wall": "1979", "user": "0", "system": "0", "file": "memory consumption"}
     ]
   },
   "transform": [
@@ -96,7 +107,7 @@ __DATA__
           "title": ""
         },
         "sort" : [
-__SORT__
+"CDS (default)", "CDS (static)", "CDS (dynamic)", "Leyden", "Leyden (PreloadOnly)", "AOT", "AOT (PreloadOnly)", "Graal (CE)", "Graal (EE)", "Graal (EE G1)", "Graal (EE PGO)", "Graal (EE G1 PGO)"
         ]
       }
     },
@@ -112,7 +123,7 @@ __SORT__
             "zindex": 1
           },
           "sort" : [
-__SORT__
+"CDS (default)", "CDS (static)", "CDS (dynamic)", "Leyden", "Leyden (PreloadOnly)", "AOT", "AOT (PreloadOnly)", "Graal (CE)", "Graal (EE)", "Graal (EE G1)", "Graal (EE PGO)", "Graal (EE G1 PGO)"
           ]
         }
       }

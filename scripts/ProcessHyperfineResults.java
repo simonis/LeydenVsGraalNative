@@ -55,6 +55,7 @@ public class ProcessHyperfineResults {
             }
         });
         template = template.replace("__ITERATIONS__", iterations);
+        template = template.replace("__CONFIGURATION__", System.getProperty("configuration", ""));
         template = template.replace("__DATA__", Arrays.stream(data).collect(Collectors.joining(",\n")));
         template = template.replace("__SORT__", modes.values().stream().map(s -> "\"" + s + "\"").collect(Collectors.joining(", ")));
         Files.writeString(output, template, StandardOpenOption.CREATE_NEW /* Don't overwrite any existing files */);

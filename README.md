@@ -172,6 +172,17 @@ Second, the benchmarks were run with the default JVM settings (except for the tw
 
 Looking at the CPU usage for the run with one compilation, we can see that the current Leyden/AOT implementation already cuts down the execution time to 43% while Graal Native Image CE/EE requires just about 9%/6% of the default HotSpot execution time. Notice however, how the HotSpot runs have a ~three times higher user time. This means that there's still a significant amount of concurrent work going on. For the single compilation case, that's mostly JIT activity. That can be verified by looking at the [-XX:+PreloadOnly](https://github.com/openjdk/leyden/pull/44) runs where the user time is not much higher than the wall clock time because it disables profiling and therefore doesn't trigger any recompilations of AOT compiled code (at the cost of less effective code). For the Native Image case, wall clock time is equal to user time because there's no JIT or other concurrent activity going on.
 
+#### Increasing the number of training iterations
+
+The following graphs are taken with the same settings as before, except that the number of warmup iterations for creating the CDS/Leyden/AOT archives and the PGO executables has been increased from 90 to 10000.
+
+| ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchApp1.svg) |
+|-------|
+| ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchApp100.svg) |
+| ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchApp10000.svg) |
+
+The effects of increasing the number of training iterations is overall quite small. Interestingly, it seem to slightly worsen the Leyden/AOT time for running one/hundred compilations and only shows positive effects for 10000 compilations.
+
 ### Appendix
 
 #### Creating the graphs
