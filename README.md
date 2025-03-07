@@ -176,12 +176,15 @@ Looking at the CPU usage for the run with one compilation, we can see that the c
 
 The following graphs are taken with the same settings as before, except that the number of warmup iterations for creating the CDS/Leyden/AOT archives and the PGO executables has been increased from 90 to 10000.
 
-| ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchApp1.svg) |
-|-------|
-| ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchApp100.svg) |
-| ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchApp10000.svg) |
+![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchApp1.svg)
+![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchApp100.svg)
+![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchApp10000.svg)
 
 The effects of increasing the number of training iterations is overall quite small. Interestingly, it seem to slightly worsen the Leyden/AOT time for running one/hundred compilations and only shows positive effects for 10000 compilations.
+
+The results for the memory consumption change in a similar way. You can click on the graphs below to get a larger version of them:
+| ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchAppRSS1.svg) | ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchAppRSS100.svg) | ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchAppRSS10000.svg) |
+|-------|------|------|
 
 ### Appendix
 
