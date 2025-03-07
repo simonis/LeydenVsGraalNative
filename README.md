@@ -186,6 +186,20 @@ The results for the memory consumption change in a similar way. You can click on
 | ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchAppRSS1.svg) | ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchAppRSS100.svg) | ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchAppRSS10000.svg) |
 |-------|------|------|
 
+#### Using Serial GC
+
+The following graphs are taken with the same settings as before, except that the number of warmup iterations for creating the CDS/Leyden/AOT archives and the PGO executables has been increased from 90 to 10000 and all the HotSpot runs were executed with Serial GC instead of the default G1 GC.
+
+![](graphs/2025-03-07-10-26_10000-warmup_serial/JavacBenchApp1.svg)
+![](graphs/2025-03-07-10-26_10000-warmup_serial/JavacBenchApp100.svg)
+![](graphs/2025-03-07-10-26_10000-warmup_serial/JavacBenchApp10000.svg)
+
+The effects of increasing the number of training iterations is overall quite small. Interestingly, it seem to slightly worsen the Leyden/AOT time for running one/hundred compilations and only shows positive effects for 10000 compilations.
+
+The results for the memory consumption change in a similar way. You can click on the graphs below to get a larger version of them:
+| ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchAppRSS1.svg) | ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchAppRSS100.svg) | ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchAppRSS10000.svg) |
+|-------|------|------|
+
 ### Appendix
 
 #### Creating the graphs
