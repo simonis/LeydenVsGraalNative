@@ -197,7 +197,7 @@ The following graphs are taken with the same settings as before, except that the
 The effects of increasing the number of training iterations is overall quite small. Interestingly, it seem to slightly worsen the Leyden/AOT time for running one/hundred compilations and only shows positive effects for 10000 compilations.
 
 The results for the memory consumption change in a similar way. You can click on the graphs below to get a larger version of them:
-| ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchAppRSS1.svg) | ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchAppRSS100.svg) | ![](graphs/2025-03-06-14-14_10000-warmup/JavacBenchAppRSS10000.svg) |
+| ![](graphs/2025-03-07-10-26_10000-warmup_serial/JavacBenchAppRSS1.svg) | ![](graphs/2025-03-07-10-26_10000-warmup_serial/JavacBenchAppRSS100.svg) | ![](graphs/2025-03-07-10-26_10000-warmup_serial/JavacBenchAppRSS10000.svg) |
 |-------|------|------|
 
 ### Appendix
