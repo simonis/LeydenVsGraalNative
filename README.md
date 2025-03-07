@@ -1,6 +1,6 @@
 ## Leyden vs. Graal Native Image
 
-This is a preliminary (as of March 2025) comparison of the CPU and memory consumption of the simple [`JavacBenchApp`](https://github.com/openjdk/leyden/blob/8204ccbc0161306295d6c433e0048f7bba8c9041/test/hotspot/jtreg/runtime/cds/appcds/applications/JavacBench.java) application from Leyden's JTreg tests. The program uses the `javax.tools` interface to programmatically compile a variable number of Java classes created from a string template and tries to exercise a fair amount of `javac` features. The number of compiled classes can be given as a command line parameter. At the end of its execution, the program dynamically loads one of the compiled classes and calls a method from it.
+This is a preliminary (as of March 2025) comparison of the CPU and memory consumption of the simple [`JavacBenchApp`](https://github.com/openjdk/leyden/blob/8204ccbc0161306295d6c433e0048f7bba8c9041/test/hotspot/jtreg/runtime/cds/appcds/applications/JavacBenchApp.java) application from Leyden's JTreg tests. The program uses the `javax.tools` interface to programmatically compile a variable number of Java classes created from a string template and tries to exercise a fair amount of `javac` features. The number of compiled classes can be given as a command line parameter. At the end of its execution, the program dynamically loads one of the compiled classes and calls a method from it.
 
 Read on for the details about what the following graph is actually displaying and how it was created :)
 
