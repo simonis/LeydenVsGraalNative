@@ -7,7 +7,7 @@ echo_and_exec() {
   "$@"
 }
 
-OUTPUT="./build-default"
+OUTPUT="./build-10000_warmup_Serial_Xms256m_Xmx1g_2CPU"
 
 CMDLINE="-cp $OUTPUT/JavacBenchApp.jar JavacBenchApp"
 ARGS="10000"
