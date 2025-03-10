@@ -172,6 +172,10 @@ Second, the benchmarks were run with the default JVM settings (except for the tw
 
 Looking at the CPU usage for the run with one compilation, we can see that the current Leyden/AOT implementation already cuts down the execution time to 43% while Graal Native Image CE/EE requires just about 9%/6% of the default HotSpot execution time. Notice however, how the HotSpot runs have a ~three times higher user time. This means that there's still a significant amount of concurrent work going on. For the single compilation case, that's mostly JIT activity. That can be verified by looking at the [-XX:+PreloadOnly](https://github.com/openjdk/leyden/pull/44) runs where the user time is not much higher than the wall clock time because it disables profiling and therefore doesn't trigger any recompilations of AOT compiled code (at the cost of less effective code). For the Native Image case, wall clock time is equal to user time because there's no JIT or other concurrent activity going on.
 
+The more files we compile, the more the advantage of using Graal Native Image decreases. E.g. for 100 compilations, Graal CE already requires 24% of the time of the default OpenJDK run and at 10000 compilations the executable produced by Graal CE exe already runs twice as long as the application on HotSpot. Only Graal EE with G1 GC is on par with HotSpot for 100000 compilations and finally Graal EE with PGO is ~14% faster than HotSpot.
+
+The reason why Leyden/AOT is ~10 slower than HotSpot for 10000 compilations although it still spends a considerable amount of time doing JIT compilations requires more investigation.
+
 #### Increasing the number of training iterations
 
 The following graphs are taken with the same settings as before, except that the number of warmup iterations for creating the CDS/Leyden/AOT archives and the PGO executables has been increased from 90 to 10000.
@@ -199,6 +203,23 @@ The effects of increasing the number of training iterations is overall quite sma
 The results for the memory consumption change in a similar way. You can click on the graphs below to get a larger version of them:
 | ![](graphs/2025-03-07-10-26_10000-warmup_serial/JavacBenchAppRSS1.svg) | ![](graphs/2025-03-07-10-26_10000-warmup_serial/JavacBenchAppRSS100.svg) | ![](graphs/2025-03-07-10-26_10000-warmup_serial/JavacBenchAppRSS10000.svg) |
 |-------|------|------|
+
+#### Running with Serial GC, `-Xms256m -Xmx1g` on two CPUs
+
+These are the graphs of another benchmark run with 10000 warmup iterations and Serial GC but with a manually configured heap size of `-Xms256m -Xmx1g` running on just two CPUs (i.e. `taskset -c 8,9`).
+
+![](graphs/2025-03-07-19-14_10000-warmup_serial_taskset2_Xms256_Xmx1g/JavacBenchApp1.svg)
+![](graphs/2025-03-07-19-14_10000-warmup_serial_taskset2_Xms256_Xmx1g/JavacBenchApp100.svg)
+![](graphs/2025-03-07-19-14_10000-warmup_serial_taskset2_Xms256_Xmx1g/JavacBenchApp10000.svg)
+
+User plus system time now naturally stays below 200% wall clock time because we simply do not have additional CPUs for concurrent work (i.e. JIT compilations or GC in the case of the Graal EE runs which use G1 GC). This slows down the HotSpot results because now it takes even longer until the peak-optimized versions of the JIT compiled methods become available whereas it doesn't affect the Native Image executables thus further increasing the advantage of Native Image compared to Hotspot. There's a single anomaly for Graal CE with 10000 compilations which takes about twice as long as the corresponding Graal CE run with default settings. This might be related to Serial GC not working so efficiently with the smaller `MaxHeapSize` of 1g compared to 30g when running with default settings.
+
+Below you can find the memory consumption graphs for this configuration:
+
+| ![](graphs/2025-03-07-19-14_10000-warmup_serial_taskset2_Xms256_Xmx1g/JavacBenchAppRSS1.svg) | ![](graphs/2025-03-07-19-14_10000-warmup_serial_taskset2_Xms256_Xmx1g/JavacBenchAppRSS100.svg) | ![](graphs/2025-03-07-19-14_10000-warmup_serial_taskset2_Xms256_Xmx1g/JavacBenchAppRSS10000.svg) |
+|-------|------|------|
+
+Again, it's the Graal CE generated executable that stands out because it uses almost 2g RSS although the `MaxHeapSize` was configured to be 1g. It looks like something is using plenty of off-heap storage. Again, this might be related to Serial GC but requires deeper investigations.
 
 ### Appendix
 
