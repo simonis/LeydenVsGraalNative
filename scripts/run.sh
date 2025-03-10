@@ -7,10 +7,10 @@ echo_and_exec() {
   "$@"
 }
 
-OUTPUT="./build"
+OUTPUT="./build-default"
 
 CMDLINE="-cp $OUTPUT/JavacBenchApp.jar JavacBenchApp"
-ARGS="90"
+ARGS="10000"
 
 if [[ -v BUILD ]]; then
   echo "Building .."
@@ -21,25 +21,26 @@ if [[ -v BUILD ]]; then
 
   echo "Static-CDS"
   echo_and_exec mkdir -p $OUTPUT/Static-CDS
-  echo_and_exec $LEYDEN_HOME/bin/java -Xshare:off -XX:DumpLoadedClassList=$OUTPUT/Static-CDS/JavacBench.classlist $CMDLINE $ARGS
-  echo_and_exec $LEYDEN_HOME/bin/java -Xshare:dump -XX:SharedArchiveFile=$OUTPUT/Static-CDS/JavacBench.static.jsa -XX:SharedClassListFile=$OUTPUT/Static-CDS/JavacBench.classlist $CMDLINE $ARGS
-  echo_and_exec $LEYDEN_HOME/bin/java -Xshare:on -XX:SharedArchiveFile=$OUTPUT/Static-CDS/JavacBench.static.jsa $CMDLINE $ARGS
+  echo_and_exec $LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g -Xshare:off -XX:DumpLoadedClassList=$OUTPUT/Static-CDS/JavacBench.classlist $CMDLINE $ARGS
+  echo_and_exec $LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g -Xshare:dump -XX:SharedArchiveFile=$OUTPUT/Static-CDS/JavacBench.static.jsa -XX:SharedClassListFile=$OUTPUT/Static-CDS/JavacBench.classlist $CMDLINE $ARGS
+  echo_and_exec $LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g -Xshare:on -XX:SharedArchiveFile=$OUTPUT/Static-CDS/JavacBench.static.jsa $CMDLINE $ARGS
 
   echo "Dynamic-CDS"
   echo_and_exec mkdir -p $OUTPUT/Dynamic-CDS
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:ArchiveClassesAtExit=$OUTPUT/Dynamic-CDS/JavacBench.dynamic.jsa $CMDLINE $ARGS
-  echo_and_exec $LEYDEN_HOME/bin/java -Xshare:on -XX:SharedArchiveFile=$OUTPUT/Dynamic-CDS/JavacBench.dynamic.jsa $CMDLINE $ARGS
+  echo_and_exec $LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g -XX:ArchiveClassesAtExit=$OUTPUT/Dynamic-CDS/JavacBench.dynamic.jsa $CMDLINE $ARGS
+  echo_and_exec $LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g -Xshare:on -XX:SharedArchiveFile=$OUTPUT/Dynamic-CDS/JavacBench.dynamic.jsa $CMDLINE $ARGS
 
   echo "Leyden"
   echo_and_exec mkdir -p $OUTPUT/Leyden
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:+AOTClassLinking -XX:+ArchiveDynamicProxies -XX:CacheDataStore=$OUTPUT/Leyden/JavacBench.cds $CMDLINE $ARGS
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:CacheDataStore=$OUTPUT/Leyden/JavacBench.cds $CMDLINE $ARGS
+  echo_and_exec rm -f $OUTPUT/Leyden/JavacBench.cds
+  echo_and_exec $LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g -XX:+AOTClassLinking -XX:+ArchiveDynamicProxies -XX:CacheDataStore=$OUTPUT/Leyden/JavacBench.cds $CMDLINE $ARGS
+  echo_and_exec $LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g -XX:CacheDataStore=$OUTPUT/Leyden/JavacBench.cds $CMDLINE $ARGS
 
   echo "AOT"
   echo_and_exec mkdir -p $OUTPUT/AOT
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:AOTMode=record -XX:AOTConfiguration=$OUTPUT/AOT/JavacBench.aotconfig $CMDLINE $ARGS
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:AOTMode=create -XX:AOTConfiguration=$OUTPUT/AOT/JavacBench.aotconfig -XX:AOTCache=$OUTPUT/AOT/JavacBench.aot $CMDLINE $ARGS
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:AOTMode=on -XX:AOTCache=$OUTPUT/AOT/JavacBench.aot $CMDLINE $ARGS
+  echo_and_exec $LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g -XX:AOTMode=record -XX:AOTConfiguration=$OUTPUT/AOT/JavacBench.aotconfig $CMDLINE $ARGS
+  echo_and_exec $LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g -XX:AOTMode=create -XX:AOTConfiguration=$OUTPUT/AOT/JavacBench.aotconfig -XX:AOTCache=$OUTPUT/AOT/JavacBench.aot $CMDLINE $ARGS
+  echo_and_exec $LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g -XX:AOTMode=on -XX:AOTCache=$OUTPUT/AOT/JavacBench.aot $CMDLINE $ARGS
 
   echo "Graal-CE"
   echo_and_exec mkdir -p $OUTPUT/Graal-CE
@@ -83,18 +84,18 @@ modes=(
 )
 
 params=(
-  "$LEYDEN_HOME/bin/java $CMDLINE"
-  "$LEYDEN_HOME/bin/java -Xshare:on -XX:SharedArchiveFile=$OUTPUT/Static-CDS/JavacBench.static.jsa $CMDLINE"
-  "$LEYDEN_HOME/bin/java -Xshare:on -XX:SharedArchiveFile=$OUTPUT/Dynamic-CDS/JavacBench.dynamic.jsa $CMDLINE"
-  "$LEYDEN_HOME/bin/java -XX:CacheDataStore=$OUTPUT/Leyden/JavacBench.cds $CMDLINE"
-  "$LEYDEN_HOME/bin/java -XX:CacheDataStore=$OUTPUT/Leyden/JavacBench.cds -XX:+UnlockExperimentalVMOptions -XX:+PreloadOnly $CMDLINE"
-  "$LEYDEN_HOME/bin/java -XX:AOTMode=on -XX:AOTCache=$OUTPUT/AOT/JavacBench.aot $CMDLINE"
-  "$LEYDEN_HOME/bin/java -XX:AOTMode=on -XX:AOTCache=$OUTPUT/AOT/JavacBench.aot -XX:+UnlockExperimentalVMOptions -XX:+PreloadOnly $CMDLINE"
-  "$OUTPUT/Graal-CE/JavacBenchApp-Graal-CE.exe -Djava.home=$LEYDEN_HOME"
-  "$OUTPUT/Graal-EE/JavacBenchApp-Graal-EE.exe -Djava.home=$LEYDEN_HOME"
-  "$OUTPUT/Graal-EE/JavacBenchApp-Graal-EE-G1.exe -Djava.home=$LEYDEN_HOME"
-  "$OUTPUT/Graal-EE/JavacBenchApp-Graal-EE-pgo.exe -Djava.home=$LEYDEN_HOME"
-  "$OUTPUT/Graal-EE/JavacBenchApp-Graal-EE-G1-pgo.exe -Djava.home=$LEYDEN_HOME"
+  "$LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g $CMDLINE"
+  "$LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g -Xshare:on -XX:SharedArchiveFile=$OUTPUT/Static-CDS/JavacBench.static.jsa $CMDLINE"
+  "$LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g -Xshare:on -XX:SharedArchiveFile=$OUTPUT/Dynamic-CDS/JavacBench.dynamic.jsa $CMDLINE"
+  "$LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g -XX:CacheDataStore=$OUTPUT/Leyden/JavacBench.cds $CMDLINE"
+  "$LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g -XX:CacheDataStore=$OUTPUT/Leyden/JavacBench.cds -XX:+UnlockExperimentalVMOptions -XX:+PreloadOnly $CMDLINE"
+  "$LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g -XX:AOTMode=on -XX:AOTCache=$OUTPUT/AOT/JavacBench.aot $CMDLINE"
+  "$LEYDEN_HOME/bin/java -XX:+UseSerialGC -Xms256m -Xmx1g -XX:AOTMode=on -XX:AOTCache=$OUTPUT/AOT/JavacBench.aot -XX:+UnlockExperimentalVMOptions -XX:+PreloadOnly $CMDLINE"
+  "$OUTPUT/Graal-CE/JavacBenchApp-Graal-CE.exe -Xms256m -Xmx1g -Djava.home=$LEYDEN_HOME"
+  "$OUTPUT/Graal-EE/JavacBenchApp-Graal-EE.exe -Xms256m -Xmx1g -Djava.home=$LEYDEN_HOME"
+  "$OUTPUT/Graal-EE/JavacBenchApp-Graal-EE-G1.exe -Xms256m -Xmx1g -Djava.home=$LEYDEN_HOME"
+  "$OUTPUT/Graal-EE/JavacBenchApp-Graal-EE-pgo.exe -Xms256m -Xmx1g -Djava.home=$LEYDEN_HOME"
+  "$OUTPUT/Graal-EE/JavacBenchApp-Graal-EE-G1-pgo.exe -Xms256m -Xmx1g -Djava.home=$LEYDEN_HOME"
 )
 
 DATADIR=$OUTPUT/data
@@ -103,7 +104,7 @@ TIMESTAMP=`date +%G-%m-%d-%H-%M`
 
 if [[ -v TIME ]]; then
   for i in ${!modes[@]}; do
-    echo_and_exec hyperfine -w 5 -r 30 -L iterations 1,100,10000 -u millisecond --style full --export-csv $DATADIR/${modes[$i]}-$TIMESTAMP.csv -n ${modes[$i]} "${params[$i]} {iterations}"
+    echo_and_exec taskset -c 8,9 hyperfine -w 5 -r 30 -L iterations 1,100,10000 -u millisecond --style full --export-csv $DATADIR/${modes[$i]}-$TIMESTAMP.csv -n ${modes[$i]} "${params[$i]} {iterations}"
   done
 fi
 
@@ -111,7 +112,7 @@ if [[ -v MEMORY ]]; then
   for i in ${!modes[@]}; do
     for iterations in "1" "100" "10000"; do
       for j in {1..10}; do
-        echo_and_exec /usr/bin/time -o $DATADIR/${modes[$i]}-$iterations-$TIMESTAMP.rss -a -f %M ${params[$i]} $iterations
+        echo_and_exec taskset -c 8,9 /usr/bin/time -o $DATADIR/${modes[$i]}-$iterations-$TIMESTAMP.rss -a -f %M ${params[$i]} $iterations
       done
     done
   done
