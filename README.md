@@ -58,6 +58,10 @@ All the benchmarks were taken on an empty [c5.metal](https://instances.vantage.s
 
 In JTreg, `JavacBenchApp` is executed by the [`JavacBench`](https://github.com/openjdk/leyden/blob/8204ccbc0161306295d6c433e0048f7bba8c9041/test/hotspot/jtreg/runtime/cds/appcds/applications/JavacBench.java) in four modes, STATIC, DYNAMIC, LEYDEN and AOT. In the following sections I'll summarize what these modes mean. The last line in each sections describes how the benchmarks was actually run.
 
+**DEFAULT**
+
+This is java from the Leyden repository but running without any Leyden-specific enhancements. It uses the default CDS archive which is created at build time and should more or less behave the same like a vanilla OpenJDK build (OpenJDK upstream is merged frequently into the `premain` branch of the Leyden repository).
+
 **STATIC**
 ```
 $ java -Xshare:off -XX:DumpLoadedClassList=JavacBench.classlist -cp JavacBenchApp.jar JavacBenchApp 90
@@ -138,9 +142,9 @@ Following are the results for running `JavacBench 1`:
 
 ![](graphs/2025-03-04-09-04/JavacBenchApp1.svg)
 
-The left graph shows the wall clock time for each configuration. "CDS (default)" is Leyden with the default CDS archive created during the build and should be equivalent to the corresponding version of OpenJDK. Its wall clock time is set to 100%. All the other percentage labels denote the relative runtime compared to the "CDS (default)" mode.
+The left graph shows the wall clock time for each configuration. "CDS (default)" is java from the Leyden `premain` branch with the default CDS archive created during the build and should be equivalent to the corresponding version of OpenJDK. Its wall clock time is set to 100%. All the other percentage labels in the left graph denote the relative runtime compared to the "CDS (default)" mode.
 
-The right graph displays the sum of user plus system time for the configurations in the left graph. Notice that each percentage label on the right graph shows the proportion of user and system time compared to the wall clock time of the same configuration. E.g. `JavacBench 1` runs 526ms in the "CDS (default)" mode (upper, blue bar in the left graph) but it consumes 1411ms of user and system time (upper blue bar in the right graph) which is 268% of wall clock time. This means that `JavacBench 1` used ~2.6 CPUs during its run time. As mentioned in the [Test environment](#test-environment) section, these tests where running on a machine with plenty of free cores, so the proportion of wall clock time to user time shows the "parallelism" of the application (or to be more precise, the parallelism of the JVM because the application itself is single threaded). So the additional user time basically accounts for for concurrent JIT and GC activity.
+The right graph displays the sum of user plus system time for the respective configurations in the left graph. Notice that each percentage label on the right graph shows the proportion of user and system time compared to the wall clock time of the same configuration in the left graph. E.g. `JavacBench 1` runs 526ms in the "CDS (default)" mode (upper, blue bar in the left graph) but it consumes 1411ms of user and system time (upper blue bar in the right graph) which is 268% of the wall clock time. This means that `JavacBench 1` used ~2.6 CPUs during its run time. As mentioned in the [Test environment](#test-environment) section, these tests where running on a machine with plenty of free cores, so the proportion of wall clock time to user time shows the "parallelism" of the application (or to be more precise, the parallelism of the JVM because the application itself is single threaded). So the additional user time basically accounts for concurrent JIT and GC activity.
 
 The graph for running `JavacBench 100` looks as follows:
 
@@ -166,13 +170,13 @@ And finally the graph for compiling 10000 classes with `JavacBench 100`:
 
 #### Interpreting the results
 
-First of all, this benchmark is not strictly measuring startup time or time to peak performance. It measures the end-to-end time of an application from start to exit. However, for a small workload (and leaving out anomalies like [JDK-8349927](https://bugs.openjdk.org/browse/JDK-8349927)) like the compilation of a single class (i.e. `JavacBenchApp 1`) it is still a good approximation for the startup time of `javac`.
+First of all, this benchmark is not strictly measuring startup time or time to peak performance. It measures the end-to-end time of an application from start to exit. However, for a small workload like the javac compilation of a single class (i.e. `JavacBenchApp 1`) it is still a good approximation for the startup time of `javac` (neglecting anomalies like [JDK-8349927](https://bugs.openjdk.org/browse/JDK-8349927)).
 
 Second, the benchmarks were run with the default JVM settings (except for the two Graal EE runs which explicitly select G1 GC). This means that all HotSpot JVMs run with the default G1 GC and a relatively big heap of 2gb/30gb  InitialHeapSize/MaxHeapSize because the machine has plenty of RAM available. This huge heap itself can already result in a measurable startup overhead due to the initialization of the required G1 data structures (see [JDK-8348278](https://bugs.openjdk.org/browse/JDK-8348278) and [JDK-8348270](https://bugs.openjdk.org/browse/JDK-8348270)). Native Image runs with Serial GC by default and only the EE version supports G1 GC.
 
-Looking at the CPU usage for the run with one compilation, we can see that the current Leyden/AOT implementation already cuts down the execution time to 43% while Graal Native Image CE/EE requires just about 9%/6% of the default HotSpot execution time. Notice however, how the HotSpot runs have a ~three times higher user time. This means that there's still a significant amount of concurrent work going on. For the single compilation case, that's mostly JIT activity. That can be verified by looking at the [-XX:+PreloadOnly](https://github.com/openjdk/leyden/pull/44) runs where the user time is not much higher than the wall clock time because it disables profiling and therefore doesn't trigger any recompilations of AOT compiled code (at the cost of less effective code). For the Native Image case, wall clock time is equal to user time because there's no JIT or other concurrent activity going on.
+Looking at the CPU usage for the run with one compilation, we can see that the current Leyden/AOT implementation already cuts down the execution time to 43% but Graal Native Image CE/EE is still significantly faster and requires just about 9%/6% of the default HotSpot execution time. Notice however, how the HotSpot runs have a ~three times higher user time. This means that there's still a significant amount of concurrent work going on. For the single compilation case, that's mostly JIT activity. This can be verified by looking at the [-XX:+PreloadOnly](https://github.com/openjdk/leyden/pull/44) runs where the user time is not much higher than the wall clock time because it disables profiling and therefore doesn't trigger any JIT compilations as well as recompilations of AOT compiled code (at the cost of less effective code). For the Native Image case, wall clock time is equal to user time because there's no JIT or other concurrent activity going on (except for the G1 GC GraalEE runs for 10000 compilations where the concurrently running GC is clearly visible).
 
-The more files we compile, the more the advantage of using Graal Native Image decreases. E.g. for 100 compilations, Graal CE already requires 24% of the time of the default OpenJDK run and at 10000 compilations the executable produced by Graal CE exe already runs twice as long as the application on HotSpot. Only Graal EE with G1 GC is on par with HotSpot for 100000 compilations and finally Graal EE with PGO is ~14% faster than HotSpot.
+The more files we compile, the more the advantage of using Graal Native Image decreases. E.g. for 100 compilations, Graal CE already requires 24% of the time of the default OpenJDK run while at 10000 compilations the executable produced by Graal CE exe already runs twice as long as the application on HotSpot. Only Graal EE with G1 GC is on par with HotSpot for 10000 compilations and finally Graal EE with G1 and PGO even beats HotSpot by ~14%.
 
 The reason why Leyden/AOT is ~10 slower than HotSpot for 10000 compilations although it still spends a considerable amount of time doing JIT compilations requires more investigation.
 
@@ -198,13 +202,13 @@ The following graphs are taken with the same settings as before, except that the
 ![](graphs/2025-03-07-10-26_10000-warmup_serial/JavacBenchApp100.svg)
 ![](graphs/2025-03-07-10-26_10000-warmup_serial/JavacBenchApp10000.svg)
 
-The effects of increasing the number of training iterations is overall quite small. Interestingly, it seem to slightly worsen the Leyden/AOT time for running one/hundred compilations and only shows positive effects for 10000 compilations.
+As expected, switching to Serial GC slightly improves the performance of the HotSpot runs for 1/100 compilations while slowing it down for 10000 compilations. The benefit is that CPU utilization (i.e. user time) for 10000 compilations decreases because no concurrent GC work is done. Interestingly, user time for 10000 compilations is still ~2.5 times higher (compared to ~4 times for the G1 configuration) than wall clock time and this all accounts to JIT compilation overhead.
 
-The results for the memory consumption change in a similar way. You can click on the graphs below to get a larger version of them:
+For the memory consumption, the differences between G1 and Serial GC become evident for 10000 compilations, where with Serial GC, the JVM consumes just about half as much memory as with G1 GC:
 | ![](graphs/2025-03-07-10-26_10000-warmup_serial/JavacBenchAppRSS1.svg) | ![](graphs/2025-03-07-10-26_10000-warmup_serial/JavacBenchAppRSS100.svg) | ![](graphs/2025-03-07-10-26_10000-warmup_serial/JavacBenchAppRSS10000.svg) |
 |-------|------|------|
 
-#### Running with Serial GC, `-Xms256m -Xmx1g` on two CPUs
+#### Running with Serial GC and `-Xms256m -Xmx1g` on two CPUs
 
 These are the graphs of another benchmark run with 10000 warmup iterations and Serial GC but with a manually configured heap size of `-Xms256m -Xmx1g` running on just two CPUs (i.e. `taskset -c 8,9`).
 
