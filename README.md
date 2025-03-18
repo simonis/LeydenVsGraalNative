@@ -218,9 +218,10 @@ as well as native images generated with Graal EE and G1:
 
 With Graal CE and Serial GC, the GC frames are hidden inside the normal Java frames and you can see them when searching for `com.oracle.svm.core.genscavenge` in the flame graph:
 
-![](./flamegraphs/2025-03-16-19-29/Graal-CE-10000-2025-03-16-19-29-genscavenge.svg)
+![](./flamegraphs/2025-03-16-19-29/Graal-CE-10000-2025-03-16-19-29-genscavenge.png)
 
 You can find the flamegraphs of other configurations in the [./flamegraphs](./flamegraphs/) subdirectory.
+
 #### Increasing the number of training iterations
 
 The following graphs are taken with the same settings as before, except that the number of warmup iterations for creating the CDS/Leyden/AOT archives and the PGO executables has been increased from 90 to 10000.
