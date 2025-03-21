@@ -150,7 +150,7 @@ The graph for running `JavacBench 100` looks as follows:
 
 ![](graphs/2025-03-04-09-04/JavacBenchApp100.svg)
 
-And finally the graph for compiling 10000 classes with `JavacBench 100`:
+And finally the graph for compiling 10000 classes with `JavacBench 10000`:
 
 ![](graphs/2025-03-04-09-04/JavacBenchApp10000.svg)
 
