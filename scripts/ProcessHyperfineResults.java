@@ -14,13 +14,12 @@ public class ProcessHyperfineResults {
 
     static {
         modes = new LinkedHashMap<>();
-        modes.put("CDS-default", "CDS (default)");
-        modes.put("CDS-static", "CDS (static)");
-        modes.put("CDS-dynamic", "CDS (dynamic)");
-        modes.put("Leyden", "Leyden");
-        modes.put("Leyden-PreloadOnly", "Leyden (PreloadOnly)");
-        modes.put("AOT", "AOT");
-        modes.put("AOT-PreloadOnly", "AOT (PreloadOnly)");
+        modes.put("JDK24-Default", "JDK24 (default CDS)");
+        modes.put("JDK24-Static-CDS", "JDK24 (static CDS)");
+        modes.put("JDK24-Dynamic-CDS", "JDK24 (dynamic CDS)");
+        modes.put("JDK24-JEP483", "JDK24 (JEP 483)");
+        modes.put("Leyden-Premain", "Leyden");
+        modes.put("Leyden-Premain", "Leyden (PreloadOnly)");
         modes.put("Graal-CE", "Graal (CE)");
         modes.put("Graal-EE", "Graal (EE)");
         modes.put("Graal-EE-G1", "Graal (EE G1)");

@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [[ ! -v JDK24_HOME ]]; then
+  echo "You need to define JDK24_HOME"
+  exit 1
+fi
 if [[ ! -v LEYDEN_HOME ]]; then
   echo "You need to define LEYDEN_HOME"
   exit 1
@@ -24,6 +28,19 @@ echo_and_exec() {
   "$@"
 }
 
+if [[ -v FLAMEGRAPH ]]; then
+  if [[ ! -x "$(command -v stackcollapse-perf.pl)" ]]; then
+    echo "stackcollapse-perf.pl not in PATH. Clone https://github.com/brendangregg/FlameGraph and add it to the PATH"
+    exit 1
+  fi
+  if [[ ! -v ASYNCPROFILER_PATH || ! -e $ASYNCPROFILER_PATH/libasyncProfiler.so ]]; then
+    echo "You must define ASYNCPROFILER_PATH to point to a directory containing libasyncProfiler.so"
+    exit 1
+  fi
+  echo_and_exec sudo sysctl kernel.perf_event_paranoid=1
+  echo_and_exec sudo sysctl kernel.kptr_restrict=0
+fi
+
 OUTPUT="./build"
 OUTPUT_PROFILING="${OUTPUT}-profiling"
 
@@ -34,41 +51,55 @@ if [[ -v BUILD ]]; then
   echo "Building .."
 
   echo_and_exec mkdir -p $OUTPUT
-  echo_and_exec $LEYDEN_HOME/bin/javac --release 21 -d $OUTPUT/JavacBenchApp/ $LEYDEN_SRC/test/hotspot/jtreg/runtime/cds/appcds/applications/JavacBenchApp.java
-  echo_and_exec $LEYDEN_HOME/bin/jar cf $OUTPUT/JavacBenchApp.jar -C $OUTPUT/JavacBenchApp .
+  echo_and_exec $JDK24_HOME/bin/javac --release 21 -d $OUTPUT/JavacBenchApp/ $LEYDEN_SRC/test/setup_aot/JavacBenchApp.java
+  echo_and_exec $JDK24_HOME/bin/jar cf $OUTPUT/JavacBenchApp.jar -C $OUTPUT/JavacBenchApp .
 
-  echo "Static-CDS"
-  echo_and_exec mkdir -p $OUTPUT/Static-CDS
-  echo_and_exec $LEYDEN_HOME/bin/java -Xshare:off -XX:DumpLoadedClassList=$OUTPUT/Static-CDS/JavacBench.classlist $CMDLINE $ARGS
-  echo_and_exec $LEYDEN_HOME/bin/java -Xshare:dump -XX:SharedArchiveFile=$OUTPUT/Static-CDS/JavacBench.static.jsa -XX:SharedClassListFile=$OUTPUT/Static-CDS/JavacBench.classlist $CMDLINE $ARGS
-  echo_and_exec $LEYDEN_HOME/bin/java -Xshare:on -XX:SharedArchiveFile=$OUTPUT/Static-CDS/JavacBench.static.jsa $CMDLINE $ARGS
+  JDK24_DEFAULT="JDK24-Default"
+  echo ${JDK24_DEFAULT}
+  echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} $CMDLINE $ARGS
 
-  echo "Dynamic-CDS"
-  echo_and_exec mkdir -p $OUTPUT/Dynamic-CDS
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:ArchiveClassesAtExit=$OUTPUT/Dynamic-CDS/JavacBench.dynamic.jsa $CMDLINE $ARGS
-  echo_and_exec $LEYDEN_HOME/bin/java -Xshare:on -XX:SharedArchiveFile=$OUTPUT/Dynamic-CDS/JavacBench.dynamic.jsa $CMDLINE $ARGS
+  JDK24_STATIC_CDS="JDK24-Static-CDS"
+  echo ${JDK24_STATIC_CDS}
+  echo_and_exec mkdir -p $OUTPUT/${JDK24_STATIC_CDS}
+  echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -Xshare:off -XX:DumpLoadedClassList=$OUTPUT/${JDK24_STATIC_CDS}/JavacBench.classlist $CMDLINE $ARGS
+  echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -Xshare:dump -XX:SharedArchiveFile=$OUTPUT/${JDK24_STATIC_CDS}/JavacBench.static.jsa -XX:SharedClassListFile=$OUTPUT/${JDK24_STATIC_CDS}/JavacBench.classlist $CMDLINE $ARGS
+  echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -Xshare:on -XX:SharedArchiveFile=$OUTPUT/${JDK24_STATIC_CDS}/JavacBench.static.jsa $CMDLINE $ARGS
 
-  echo "Leyden"
-  echo_and_exec mkdir -p $OUTPUT/Leyden
-  echo_and_exec rm -f $OUTPUT/Leyden/JavacBench.cds
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:+AOTClassLinking -XX:+ArchiveDynamicProxies -XX:CacheDataStore=$OUTPUT/Leyden/JavacBench.cds $CMDLINE $ARGS
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:CacheDataStore=$OUTPUT/Leyden/JavacBench.cds $CMDLINE $ARGS
+  JDK24_DYNAMIC_CDS="JDK24-Dynamic-CDS"
+  echo ${JDK24_DYNAMIC_CDS}
+  echo_and_exec mkdir -p $OUTPUT/${JDK24_DYNAMIC_CDS}
+  echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:ArchiveClassesAtExit=$OUTPUT/${JDK24_DYNAMIC_CDS}/JavacBench.dynamic.jsa $CMDLINE $ARGS
+  echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -Xshare:on -XX:SharedArchiveFile=$OUTPUT/${JDK24_DYNAMIC_CDS}/JavacBench.dynamic.jsa $CMDLINE $ARGS
 
-  echo_and_exec mkdir -p $OUTPUT_PROFILING/Leyden
-  echo_and_exec rm -f $OUTPUT_PROFILING/Leyden/JavacBench.cds
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:+AOTClassLinking -XX:+ArchiveDynamicProxies -XX:CacheDataStore=$OUTPUT_PROFILING/Leyden/JavacBench.cds -XX:+PreserveFramePointer $CMDLINE $ARGS
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:CacheDataStore=$OUTPUT_PROFILING/Leyden/JavacBench.cds -XX:+PreserveFramePointer $CMDLINE $ARGS
+  JDK24_JEP483="JDK24-JEP483"
+  echo ${JDK24_JEP483}
+  echo_and_exec mkdir -p $OUTPUT/${JDK24_JEP483}
+  echo_and_exec rm -f $OUTPUT/${JDK24_JEP483}/JavacBench.aotconf $OUTPUT/${JDK24_JEP483}/JavacBench.aot
+  echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=record -XX:AOTConfiguration=$OUTPUT/${JDK24_JEP483}/JavacBench.aotconf $CMDLINE $ARGS
+  echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=create -XX:AOTConfiguration=$OUTPUT/${JDK24_JEP483}/JavacBench.aotconf -XX:AOTCache=$OUTPUT/${JDK24_JEP483}/JavacBench.aot $CMDLINE $ARGS
+  echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=on -XX:AOTCache=$OUTPUT/${JDK24_JEP483}/JavacBench.aot $CMDLINE $ARGS
 
-  echo "AOT"
-  echo_and_exec mkdir -p $OUTPUT/AOT
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:AOTMode=record -XX:AOTConfiguration=$OUTPUT/AOT/JavacBench.aotconfig $CMDLINE $ARGS
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:AOTMode=create -XX:AOTConfiguration=$OUTPUT/AOT/JavacBench.aotconfig -XX:AOTCache=$OUTPUT/AOT/JavacBench.aot $CMDLINE $ARGS
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:AOTMode=on -XX:AOTCache=$OUTPUT/AOT/JavacBench.aot $CMDLINE $ARGS
+  echo_and_exec mkdir -p $OUTPUT_PROFILING/${JDK24_JEP483}
+  echo_and_exec rm -f $OUTPUT_PROFILING/${JDK24_JEP483}/JavacBench.aotconf $OUTPUT_PROFILING/${JDK24_JEP483}/JavacBench.aot
+  echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=record -XX:AOTConfiguration=$OUTPUT_PROFILING/${JDK24_JEP483}/JavacBench.aotconf -XX:+PreserveFramePointer $CMDLINE $ARGS
+  echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=create -XX:AOTConfiguration=$OUTPUT_PROFILING/${JDK24_JEP483}/JavacBench.aotconf -XX:AOTCache=$OUTPUT_PROFILING/${JDK24_JEP483}/JavacBench.aot -XX:+PreserveFramePointer $CMDLINE $ARGS
+  echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=on -XX:AOTCache=$OUTPUT_PROFILING/${JDK24_JEP483}/JavacBench.aot -XX:+PreserveFramePointer $CMDLINE $ARGS
 
-  echo_and_exec mkdir -p $OUTPUT_PROFILING/AOT
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:AOTMode=record -XX:AOTConfiguration=$OUTPUT_PROFILING/AOT/JavacBench.aotconfig -XX:+PreserveFramePointer $CMDLINE $ARGS
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:AOTMode=create -XX:AOTConfiguration=$OUTPUT_PROFILING/AOT/JavacBench.aotconfig -XX:AOTCache=$OUTPUT_PROFILING/AOT/JavacBench.aot -XX:+PreserveFramePointer $CMDLINE $ARGS
-  echo_and_exec $LEYDEN_HOME/bin/java -XX:AOTMode=on -XX:AOTCache=$OUTPUT_PROFILING/AOT/JavacBench.aot -XX:+PreserveFramePointer $CMDLINE $ARGS
+  LEYDEN_PREMAIN="Leyden-Premain"
+  echo ${LEYDEN_PREMAIN}
+  echo_and_exec mkdir -p $OUTPUT/${LEYDEN_PREMAIN}
+  echo_and_exec rm -f $OUTPUT/${LEYDEN_PREMAIN}/JavacBench.aotconf $OUTPUT/${LEYDEN_PREMAIN}/JavacBench.aot
+  echo_and_exec $LEYDEN_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=record -XX:AOTConfiguration=$OUTPUT/${LEYDEN_PREMAIN}/JavacBench.aotconfig $CMDLINE $ARGS
+  echo_and_exec $LEYDEN_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=create -XX:AOTConfiguration=$OUTPUT/${LEYDEN_PREMAIN}/JavacBench.aotconfig -XX:AOTCache=$OUTPUT/${LEYDEN_PREMAIN}/JavacBench.aot $CMDLINE $ARGS
+  echo_and_exec $LEYDEN_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=on -XX:AOTCache=$OUTPUT/${LEYDEN_PREMAIN}/JavacBench.aot $CMDLINE $ARGS
+
+  echo_and_exec mkdir -p $OUTPUT_PROFILING/${LEYDEN_PREMAIN}
+  echo_and_exec rm -f $OUTPUT_PROFILING/${LEYDEN_PREMAIN}/JavacBench.aotconf $OUTPUT_PROFILING/${LEYDEN_PREMAIN}/JavacBench.aot
+  echo_and_exec $LEYDEN_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=record -XX:AOTConfiguration=$OUTPUT_PROFILING/${LEYDEN_PREMAIN}/JavacBench.aotconfig -XX:+PreserveFramePointer $CMDLINE $ARGS
+  echo_and_exec $LEYDEN_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=create -XX:AOTConfiguration=$OUTPUT_PROFILING/${LEYDEN_PREMAIN}/JavacBench.aotconfig -XX:AOTCache=$OUTPUT_PROFILING/${LEYDEN_PREMAIN}/JavacBench.aot -XX:+PreserveFramePointer $CMDLINE $ARGS
+  echo_and_exec $LEYDEN_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=on -XX:AOTCache=$OUTPUT_PROFILING/${LEYDEN_PREMAIN}/JavacBench.aot -XX:+PreserveFramePointer $CMDLINE $ARGS
+
+  LEYDEN_PREMAIN_PRELOADONLY="Leyden-Premain-PreloadOnly"
 
   echo "Graal-CE"
   echo_and_exec mkdir -p $OUTPUT/Graal-CE
@@ -105,13 +136,12 @@ if [[ -v BUILD ]]; then
 fi # if [[ -v BUILD ]]
 
 modes=(
-  "CDS-default"
-  "CDS-static"
-  "CDS-dynamic"
-  "Leyden"
-  "Leyden-PreloadOnly"
-  "AOT"
-  "AOT-PreloadOnly"
+  ${JDK24_DEFAULT}
+  ${JDK24_STATIC_CDS}
+  ${JDK24_DYNAMIC_CDS}
+  ${JDK24_JEP483}
+  ${LEYDEN_PREMAIN}
+  ${LEYDEN_PREMAIN_PRELOADONLY}
   "Graal-CE"
   "Graal-EE"
   "Graal-EE-G1"
@@ -120,33 +150,31 @@ modes=(
 )
 
 params=(
-  "$LEYDEN_HOME/bin/java $CMDLINE"
-  "$LEYDEN_HOME/bin/java -Xshare:on -XX:SharedArchiveFile=$OUTPUT/Static-CDS/JavacBench.static.jsa $CMDLINE"
-  "$LEYDEN_HOME/bin/java -Xshare:on -XX:SharedArchiveFile=$OUTPUT/Dynamic-CDS/JavacBench.dynamic.jsa $CMDLINE"
-  "$LEYDEN_HOME/bin/java -XX:CacheDataStore=$OUTPUT/Leyden/JavacBench.cds $CMDLINE"
-  "$LEYDEN_HOME/bin/java -XX:CacheDataStore=$OUTPUT/Leyden/JavacBench.cds -XX:+UnlockExperimentalVMOptions -XX:+PreloadOnly $CMDLINE"
-  "$LEYDEN_HOME/bin/java -XX:AOTMode=on -XX:AOTCache=$OUTPUT/AOT/JavacBench.aot $CMDLINE"
-  "$LEYDEN_HOME/bin/java -XX:AOTMode=on -XX:AOTCache=$OUTPUT/AOT/JavacBench.aot -XX:+UnlockExperimentalVMOptions -XX:+PreloadOnly $CMDLINE"
-  "$OUTPUT/Graal-CE/JavacBenchApp-Graal-CE.exe -Djava.home=$LEYDEN_HOME"
-  "$OUTPUT/Graal-EE/JavacBenchApp-Graal-EE.exe -Djava.home=$LEYDEN_HOME"
-  "$OUTPUT/Graal-EE/JavacBenchApp-Graal-EE-G1.exe -Djava.home=$LEYDEN_HOME"
-  "$OUTPUT/Graal-EE/JavacBenchApp-Graal-EE-pgo.exe -Djava.home=$LEYDEN_HOME"
-  "$OUTPUT/Graal-EE/JavacBenchApp-Graal-EE-G1-pgo.exe -Djava.home=$LEYDEN_HOME"
+  "$JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} $CMDLINE"
+  "$JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -Xshare:on -XX:SharedArchiveFile=$OUTPUT/${JDK24_STATIC_CDS}/JavacBench.static.jsa $CMDLINE"
+  "$JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -Xshare:on -XX:SharedArchiveFile=$OUTPUT/${JDK24_DYNAMIC_CDS}/JavacBench.dynamic.jsa $CMDLINE"
+  "$JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=on -XX:AOTCache=$OUTPUT/${JDK24_JEP483}/JavacBench.aot $CMDLINE"
+  "$LEYDEN_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=on -XX:AOTCache=$OUTPUT/${LEYDEN_PREMAIN}/JavacBench.aot $CMDLINE"
+  "$LEYDEN_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=on -XX:AOTCache=$OUTPUT/${LEYDEN_PREMAIN}/JavacBench.aot -XX:+UnlockExperimentalVMOptions -XX:+PreloadOnly $CMDLINE"
+  "$OUTPUT/Graal-CE/JavacBenchApp-Graal-CE.exe ${HEAP_ARGS} -Djava.home=$LEYDEN_HOME"
+  "$OUTPUT/Graal-EE/JavacBenchApp-Graal-EE.exe ${HEAP_ARGS} -Djava.home=$LEYDEN_HOME"
+  "$OUTPUT/Graal-EE/JavacBenchApp-Graal-EE-G1.exe ${HEAP_ARGS} -Djava.home=$LEYDEN_HOME"
+  "$OUTPUT/Graal-EE/JavacBenchApp-Graal-EE-pgo.exe ${HEAP_ARGS} -Djava.home=$LEYDEN_HOME"
+  "$OUTPUT/Graal-EE/JavacBenchApp-Graal-EE-G1-pgo.exe ${HEAP_ARGS} -Djava.home=$LEYDEN_HOME"
 )
 
 params_profiling=(
-  "$LEYDEN_HOME/bin/java $CMDLINE"
-  "$LEYDEN_HOME/bin/java -Xshare:on -XX:SharedArchiveFile=$OUTPUT/Static-CDS/JavacBench.static.jsa $CMDLINE"
-  "$LEYDEN_HOME/bin/java -Xshare:on -XX:SharedArchiveFile=$OUTPUT/Dynamic-CDS/JavacBench.dynamic.jsa $CMDLINE"
-  "$LEYDEN_HOME/bin/java -XX:CacheDataStore=$OUTPUT_PROFILING/Leyden/JavacBench.cds $CMDLINE"
-  "$LEYDEN_HOME/bin/java -XX:CacheDataStore=$OUTPUT_PROFILING/Leyden/JavacBench.cds -XX:+UnlockExperimentalVMOptions -XX:+PreloadOnly $CMDLINE"
-  "$LEYDEN_HOME/bin/java -XX:AOTMode=on -XX:AOTCache=$OUTPUT_PROFILING/AOT/JavacBench.aot $CMDLINE"
-  "$LEYDEN_HOME/bin/java -XX:AOTMode=on -XX:AOTCache=$OUTPUT_PROFILING/AOT/JavacBench.aot -XX:+UnlockExperimentalVMOptions -XX:+PreloadOnly $CMDLINE"
-  "$OUTPUT_PROFILING/Graal-CE/JavacBenchApp-Graal-CE.exe -Djava.home=$LEYDEN_HOME"
-  "$OUTPUT_PROFILING/Graal-EE/JavacBenchApp-Graal-EE.exe -Djava.home=$LEYDEN_HOME"
-  "$OUTPUT_PROFILING/Graal-EE/JavacBenchApp-Graal-EE-G1.exe -Djava.home=$LEYDEN_HOME"
-  "$OUTPUT_PROFILING/Graal-EE/JavacBenchApp-Graal-EE-pgo.exe -Djava.home=$LEYDEN_HOME"
-  "$OUTPUT_PROFILING/Graal-EE/JavacBenchApp-Graal-EE-G1-pgo.exe -Djava.home=$LEYDEN_HOME"
+  "$JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} $CMDLINE"
+  "$JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -Xshare:on -XX:SharedArchiveFile=$OUTPUT/${JDK24_STATIC_CDS}/JavacBench.static.jsa $CMDLINE"
+  "$JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -Xshare:on -XX:SharedArchiveFile=$OUTPUT/${JDK24_DYNAMIC_CDS}/JavacBench.dynamic.jsa $CMDLINE"
+  "$JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=on -XX:AOTCache=$OUTPUT/${JDK24_JEP483}/JavacBench.aot $CMDLINE"
+  "$LEYDEN_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=on -XX:AOTCache=$OUTPUT_PROFILING/${LEYDEN_PREMAIN}/JavacBench.aot $CMDLINE"
+  "$LEYDEN_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=on -XX:AOTCache=$OUTPUT_PROFILING/${LEYDEN_PREMAIN}/JavacBench.aot -XX:+UnlockExperimentalVMOptions -XX:+PreloadOnly $CMDLINE"
+  "$OUTPUT_PROFILING/Graal-CE/JavacBenchApp-Graal-CE.exe ${HEAP_ARGS} -Djava.home=$LEYDEN_HOME"
+  "$OUTPUT_PROFILING/Graal-EE/JavacBenchApp-Graal-EE.exe ${HEAP_ARGS} -Djava.home=$LEYDEN_HOME"
+  "$OUTPUT_PROFILING/Graal-EE/JavacBenchApp-Graal-EE-G1.exe ${HEAP_ARGS} -Djava.home=$LEYDEN_HOME"
+  "$OUTPUT_PROFILING/Graal-EE/JavacBenchApp-Graal-EE-pgo.exe ${HEAP_ARGS} -Djava.home=$LEYDEN_HOME"
+  "$OUTPUT_PROFILING/Graal-EE/JavacBenchApp-Graal-EE-G1-pgo.exe ${HEAP_ARGS} -Djava.home=$LEYDEN_HOME"
 )
 
 DATADIR=$OUTPUT/data
@@ -155,7 +183,7 @@ TIMESTAMP=`date +%G-%m-%d-%H-%M`
 
 if [[ -v TIME ]]; then
   for i in ${!modes[@]}; do
-    echo_and_exec hyperfine -w 5 -r 30 -L iterations 1,100,10000 -u millisecond --style full --export-csv $DATADIR/${modes[$i]}-$TIMESTAMP.csv -n ${modes[$i]} "${params[$i]} {iterations}"
+    echo_and_exec ${TASKSET} hyperfine -w 5 -r 30 -L iterations 1,100,10000 -u millisecond --style full --export-csv $DATADIR/${modes[$i]}-$TIMESTAMP.csv -n ${modes[$i]} "${params[$i]} {iterations}"
   done
 fi
 
@@ -163,23 +191,13 @@ if [[ -v MEMORY ]]; then
   for i in ${!modes[@]}; do
     for iterations in "1" "100" "10000"; do
       for j in {1..10}; do
-        echo_and_exec /usr/bin/time -o $DATADIR/${modes[$i]}-$iterations-$TIMESTAMP.rss -a -f %M ${params[$i]} $iterations
+        echo_and_exec ${TASKSET} /usr/bin/time -o $DATADIR/${modes[$i]}-$iterations-$TIMESTAMP.rss -a -f %M ${params[$i]} $iterations
       done
     done
   done
 fi
 
 if [[ -v FLAMEGRAPH ]]; then
-  if [[ ! -x "$(command -v stackcollapse-perf.pl)" ]]; then
-    echo "stackcollapse-perf.pl not in PATH. Clone https://github.com/brendangregg/FlameGraph and add it to the PATH"
-    exit 1
-  fi
-  if [[ ! -v ASYNCPROFILER_PATH || ! -e $ASYNCPROFILER_PATH/libasyncProfiler.so ]]; then
-    echo "You must define ASYNCPROFILER_PATH to point to a directory containing libasyncProfiler.so"
-    exit 1
-  fi
-  echo_and_exec sudo sysctl kernel.perf_event_paranoid=1
-  echo_and_exec sudo sysctl kernel.kptr_restrict=0
   perf=(
     "10000"
     "1000"
