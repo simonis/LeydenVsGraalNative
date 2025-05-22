@@ -1,0 +1,150 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v3.json",
+  "title": {
+    "text" : "JavacBenchApp 100 (Serial GC, Xms256m, Xmx1g, 2 CPUs)",
+    "anchor": "middle",
+    "offset": 20
+  },
+  "data": {
+    "values" : [
+{"type": "JDK24 (default CDS)", "wall": "184", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "JDK24 (static CDS)", "wall": "172", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "JDK24 (dynamic CDS)", "wall": "172", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "JDK24 (JEP 483)", "wall": "169", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "Leyden", "wall": "191", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "Leyden (PreloadOnly)", "wall": "147", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "Graal (CE)", "wall": "142", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "Graal (EE)", "wall": "116", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "Graal (EE G1)", "wall": "134", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "Graal (EE PGO)", "wall": "96", "user": "0", "system": "0", "file": "memory consumption"},
+{"type": "Graal (EE G1 PGO)", "wall": "104", "user": "0", "system": "0", "file": "memory consumption"}
+    ]
+  },
+  "transform": [
+    {
+      "window": [
+        {
+          "op": "row_number",
+          "as": "nr"
+        }
+      ]
+    },
+    {
+      "window": [
+        {
+          "op": "first_value",
+          "field": "wall",
+          "as": "wall_default"
+        }
+      ],
+      "sort": [
+        {
+          "field": "nr",
+          "order": "ascending"
+        }
+      ]
+    },
+    {
+      "window": [
+        {
+          "op": "lag",
+          "param": 1,
+          "field": "wall",
+          "as": "wall_previous"
+        }
+      ],
+      "sort": [
+        {
+          "field": "nr",
+          "order": "ascending"
+        }
+      ]
+    },
+    {
+      "calculate": "datum.file == 'memory consumption' ? datum.wall : toNumber(datum.user) + toNumber(datum.system)",
+      "as" : "time_val"
+    },
+    {
+      "calculate": "datum.file == 'memory consumption' ? datum.time_val/datum.wall_default : datum.time_val/datum.wall_previous",
+      "as" : "percentage"
+    }
+  ],
+  "facet": {
+    "column": {
+      "field": "file",
+      "type": "nominal",
+      "title": "",
+      "header": {
+        "labelAngle": 270,
+        "labelAlign": "center",
+        "labelAnchor": "middle",
+        "labelOrient": "left",
+        "labelFontWeight": "bold"
+      },
+      "sort": [
+        "memory consumption", "user+sys time (% rel. to wall time)"
+      ]
+    }
+  },
+  "spec": {
+    "encoding": {
+      "x": {
+        "field": "time_val",
+        "type": "quantitative",
+        "axis": {
+          "title": "RSS (mb)",
+          "grid": true
+        }
+      },
+      "y": {
+        "field": "type",
+        "type": "nominal",
+        "axis": {
+          "labels": false,
+          "ticks":false,
+          "domainWidth": 0,
+          "title": ""
+        },
+        "sort" : [
+"JDK24 (default CDS)", "JDK24 (static CDS)", "JDK24 (dynamic CDS)", "JDK24 (JEP 483)", "Leyden", "Leyden (PreloadOnly)", "Graal (CE)", "Graal (EE)", "Graal (EE G1)", "Graal (EE PGO)", "Graal (EE G1 PGO)"
+        ]
+      }
+    },
+    "layer": [{
+      "mark": "bar",
+      "encoding": {
+        "color": {
+          "field": "type",
+          "type": "nominal",
+          "legend": {
+            "title" : "",
+            "offset" : null,
+            "zindex": 1
+          },
+          "sort" : [
+"JDK24 (default CDS)", "JDK24 (static CDS)", "JDK24 (dynamic CDS)", "JDK24 (JEP 483)", "Leyden", "Leyden (PreloadOnly)", "Graal (CE)", "Graal (EE)", "Graal (EE G1)", "Graal (EE PGO)", "Graal (EE G1 PGO)"
+          ]
+        }
+      }
+    }, {
+      "mark": {
+        "type": "text",
+        "dx": 5,
+        "angle": 0,
+        "baseline": "middle",
+        "align": "left"
+      },
+      "encoding": {
+        "text": {
+          "field": "percentage",
+          "type": "nominal",
+          "format": ".0%"
+        }
+      }
+    }]
+  },
+  "config": {
+    "view": {"stroke": "transparent"},
+    "axis": {"domainWidth": 1}
+  }
+}
