@@ -19,7 +19,7 @@ public class ProcessRssResults {
         modes.put("JDK24-Dynamic-CDS", "JDK24 (dynamic CDS)");
         modes.put("JDK24-JEP483", "JDK24 (JEP 483)");
         modes.put("Leyden-Premain", "Leyden");
-        modes.put("Leyden-Premain", "Leyden (PreloadOnly)");
+        modes.put("Leyden-Premain-PreloadOnly", "Leyden (PreloadOnly)");
         modes.put("Graal-CE", "Graal (CE)");
         modes.put("Graal-EE", "Graal (EE)");
         modes.put("Graal-EE-G1", "Graal (EE G1)");
@@ -38,7 +38,7 @@ public class ProcessRssResults {
         Path output = Path.of(args[2]);
         String[] data = new String[modes.size()];
         Arrays.stream(args, 3, args.length).
-                filter(arg -> Path.of(arg).getFileName().toString().matches("[1a-zA-Z-]+-" + iterations + "-.+")).
+                filter(arg -> Path.of(arg).getFileName().toString().matches("[1-9a-zA-Z-]+-" + iterations + "-.+")).
                 forEach(arg -> {
             String filename = Path.of(arg).getFileName().toString();
             String mode = filename.split("-" + iterations + "-")[0];

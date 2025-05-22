@@ -19,7 +19,7 @@ public class ProcessHyperfineResults {
         modes.put("JDK24-Dynamic-CDS", "JDK24 (dynamic CDS)");
         modes.put("JDK24-JEP483", "JDK24 (JEP 483)");
         modes.put("Leyden-Premain", "Leyden");
-        modes.put("Leyden-Premain", "Leyden (PreloadOnly)");
+        modes.put("Leyden-Premain-PreloadOnly", "Leyden (PreloadOnly)");
         modes.put("Graal-CE", "Graal (CE)");
         modes.put("Graal-EE", "Graal (EE)");
         modes.put("Graal-EE-G1", "Graal (EE G1)");
