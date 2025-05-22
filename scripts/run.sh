@@ -47,6 +47,13 @@ OUTPUT_PROFILING="${OUTPUT}-profiling"
 CMDLINE="-cp $OUTPUT/JavacBenchApp.jar JavacBenchApp"
 ARGS="90"
 
+JDK24_DEFAULT="JDK24-Default"
+JDK24_STATIC_CDS="JDK24-Static-CDS"
+JDK24_DYNAMIC_CDS="JDK24-Dynamic-CDS"
+JDK24_JEP483="JDK24-JEP483"
+LEYDEN_PREMAIN="Leyden-Premain"
+LEYDEN_PREMAIN_PRELOADONLY="Leyden-Premain-PreloadOnly"
+
 if [[ -v BUILD ]]; then
   echo "Building .."
 
@@ -54,24 +61,20 @@ if [[ -v BUILD ]]; then
   echo_and_exec $JDK24_HOME/bin/javac --release 21 -d $OUTPUT/JavacBenchApp/ $LEYDEN_SRC/test/setup_aot/JavacBenchApp.java
   echo_and_exec $JDK24_HOME/bin/jar cf $OUTPUT/JavacBenchApp.jar -C $OUTPUT/JavacBenchApp .
 
-  JDK24_DEFAULT="JDK24-Default"
   echo ${JDK24_DEFAULT}
   echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} $CMDLINE $ARGS
 
-  JDK24_STATIC_CDS="JDK24-Static-CDS"
   echo ${JDK24_STATIC_CDS}
   echo_and_exec mkdir -p $OUTPUT/${JDK24_STATIC_CDS}
   echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -Xshare:off -XX:DumpLoadedClassList=$OUTPUT/${JDK24_STATIC_CDS}/JavacBench.classlist $CMDLINE $ARGS
   echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -Xshare:dump -XX:SharedArchiveFile=$OUTPUT/${JDK24_STATIC_CDS}/JavacBench.static.jsa -XX:SharedClassListFile=$OUTPUT/${JDK24_STATIC_CDS}/JavacBench.classlist $CMDLINE $ARGS
   echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -Xshare:on -XX:SharedArchiveFile=$OUTPUT/${JDK24_STATIC_CDS}/JavacBench.static.jsa $CMDLINE $ARGS
 
-  JDK24_DYNAMIC_CDS="JDK24-Dynamic-CDS"
   echo ${JDK24_DYNAMIC_CDS}
   echo_and_exec mkdir -p $OUTPUT/${JDK24_DYNAMIC_CDS}
   echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:ArchiveClassesAtExit=$OUTPUT/${JDK24_DYNAMIC_CDS}/JavacBench.dynamic.jsa $CMDLINE $ARGS
   echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -Xshare:on -XX:SharedArchiveFile=$OUTPUT/${JDK24_DYNAMIC_CDS}/JavacBench.dynamic.jsa $CMDLINE $ARGS
 
-  JDK24_JEP483="JDK24-JEP483"
   echo ${JDK24_JEP483}
   echo_and_exec mkdir -p $OUTPUT/${JDK24_JEP483}
   echo_and_exec rm -f $OUTPUT/${JDK24_JEP483}/JavacBench.aotconf $OUTPUT/${JDK24_JEP483}/JavacBench.aot
@@ -85,7 +88,6 @@ if [[ -v BUILD ]]; then
   echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=create -XX:AOTConfiguration=$OUTPUT_PROFILING/${JDK24_JEP483}/JavacBench.aotconf -XX:AOTCache=$OUTPUT_PROFILING/${JDK24_JEP483}/JavacBench.aot -XX:+PreserveFramePointer $CMDLINE $ARGS
   echo_and_exec $JDK24_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=on -XX:AOTCache=$OUTPUT_PROFILING/${JDK24_JEP483}/JavacBench.aot -XX:+PreserveFramePointer $CMDLINE $ARGS
 
-  LEYDEN_PREMAIN="Leyden-Premain"
   echo ${LEYDEN_PREMAIN}
   echo_and_exec mkdir -p $OUTPUT/${LEYDEN_PREMAIN}
   echo_and_exec rm -f $OUTPUT/${LEYDEN_PREMAIN}/JavacBench.aotconf $OUTPUT/${LEYDEN_PREMAIN}/JavacBench.aot
@@ -98,8 +100,6 @@ if [[ -v BUILD ]]; then
   echo_and_exec $LEYDEN_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=record -XX:AOTConfiguration=$OUTPUT_PROFILING/${LEYDEN_PREMAIN}/JavacBench.aotconfig -XX:+PreserveFramePointer $CMDLINE $ARGS
   echo_and_exec $LEYDEN_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=create -XX:AOTConfiguration=$OUTPUT_PROFILING/${LEYDEN_PREMAIN}/JavacBench.aotconfig -XX:AOTCache=$OUTPUT_PROFILING/${LEYDEN_PREMAIN}/JavacBench.aot -XX:+PreserveFramePointer $CMDLINE $ARGS
   echo_and_exec $LEYDEN_HOME/bin/java ${GC_ARG} ${HEAP_ARGS} -XX:AOTMode=on -XX:AOTCache=$OUTPUT_PROFILING/${LEYDEN_PREMAIN}/JavacBench.aot -XX:+PreserveFramePointer $CMDLINE $ARGS
-
-  LEYDEN_PREMAIN_PRELOADONLY="Leyden-Premain-PreloadOnly"
 
   echo "Graal-CE"
   echo_and_exec mkdir -p $OUTPUT/Graal-CE
