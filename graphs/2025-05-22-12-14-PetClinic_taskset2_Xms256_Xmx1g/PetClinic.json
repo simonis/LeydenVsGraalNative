@@ -1,0 +1,163 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v3.json",
+  "title": {
+    "text" : "Spring PetClinic Startup (Xms256m, Xmx1g, 2 CPUs)",
+    "anchor": "middle",
+    "offset": 20
+  },
+  "data": {
+    "values" : [
+{"type": "JDK21 (default CDS)", "wall": "5351", "user": "9803", "system": "356", "file": "wall clock time"},
+{"type": "JDK21 (default CDS)", "wall": "5351", "user": "9803", "system": "356", "file": "user+sys time (% rel. to wall time)"},
+{"type": "JDK24 (default CDS)", "wall": "5396", "user": "9858", "system": "320", "file": "wall clock time"},
+{"type": "JDK24 (default CDS)", "wall": "5396", "user": "9858", "system": "320", "file": "user+sys time (% rel. to wall time)"},
+{"type": "JDK24 (static CDS)", "wall": "3580", "user": "6540", "system": "234", "file": "wall clock time"},
+{"type": "JDK24 (static CDS)", "wall": "3580", "user": "6540", "system": "234", "file": "user+sys time (% rel. to wall time)"},
+{"type": "JDK24 (dynamic CDS)", "wall": "3751", "user": "6824", "system": "244", "file": "wall clock time"},
+{"type": "JDK24 (dynamic CDS)", "wall": "3751", "user": "6824", "system": "244", "file": "user+sys time (% rel. to wall time)"},
+{"type": "JDK24 (JEP 483)", "wall": "3339", "user": "5996", "system": "218", "file": "wall clock time"},
+{"type": "JDK24 (JEP 483)", "wall": "3339", "user": "5996", "system": "218", "file": "user+sys time (% rel. to wall time)"},
+{"type": "Leyden", "wall": "3657", "user": "6803", "system": "215", "file": "wall clock time"},
+{"type": "Leyden", "wall": "3657", "user": "6803", "system": "215", "file": "user+sys time (% rel. to wall time)"},
+{"type": "Leyden (PreloadOnly)", "wall": "12773", "user": "12836", "system": "150", "file": "wall clock time"},
+{"type": "Leyden (PreloadOnly)", "wall": "12773", "user": "12836", "system": "150", "file": "user+sys time (% rel. to wall time)"},
+{"type": "Graal (CE)", "wall": "645", "user": "567", "system": "80", "file": "wall clock time"},
+{"type": "Graal (CE)", "wall": "645", "user": "567", "system": "80", "file": "user+sys time (% rel. to wall time)"},
+{"type": "Graal (EE)", "wall": "505", "user": "437", "system": "70", "file": "wall clock time"},
+{"type": "Graal (EE)", "wall": "505", "user": "437", "system": "70", "file": "user+sys time (% rel. to wall time)"},
+{"type": "Graal (EE G1)", "wall": "517", "user": "454", "system": "89", "file": "wall clock time"},
+{"type": "Graal (EE G1)", "wall": "517", "user": "454", "system": "89", "file": "user+sys time (% rel. to wall time)"},
+{"type": "Graal (EE PGO)", "wall": "421", "user": "362", "system": "61", "file": "wall clock time"},
+{"type": "Graal (EE PGO)", "wall": "421", "user": "362", "system": "61", "file": "user+sys time (% rel. to wall time)"},
+{"type": "Graal (EE G1 PGO)", "wall": "437", "user": "371", "system": "86", "file": "wall clock time"},
+{"type": "Graal (EE G1 PGO)", "wall": "437", "user": "371", "system": "86", "file": "user+sys time (% rel. to wall time)"}
+    ]
+  },
+  "transform": [
+    {
+      "window": [
+        {
+          "op": "row_number",
+          "as": "nr"
+        }
+      ]
+    },
+    {
+      "window": [
+        {
+          "op": "first_value",
+          "field": "wall",
+          "as": "wall_default"
+        }
+      ],
+      "sort": [
+        {
+          "field": "nr",
+          "order": "ascending"
+        }
+      ]
+    },
+    {
+      "window": [
+        {
+          "op": "lag",
+          "param": 1,
+          "field": "wall",
+          "as": "wall_previous"
+        }
+      ],
+      "sort": [
+        {
+          "field": "nr",
+          "order": "ascending"
+        }
+      ]
+    },
+    {
+      "calculate": "datum.file == 'wall clock time' ? datum.wall : toNumber(datum.user) + toNumber(datum.system)",
+      "as" : "time_val"
+    },
+    {
+      "calculate": "datum.file == 'wall clock time' ? datum.time_val/datum.wall_default : datum.time_val/datum.wall_previous",
+      "as" : "percentage"
+    }
+  ],
+  "facet": {
+    "column": {
+      "field": "file",
+      "type": "nominal",
+      "title": "",
+      "header": {
+        "labelAngle": 270,
+        "labelAlign": "center",
+        "labelAnchor": "middle",
+        "labelOrient": "left",
+        "labelFontWeight": "bold"
+      },
+      "sort": [
+        "wall clock time", "user+sys time (% rel. to wall time)"
+      ]
+    }
+  },
+  "spec": {
+    "encoding": {
+      "x": {
+        "field": "time_val",
+        "type": "quantitative",
+        "axis": {
+          "title": "time (ms)",
+          "grid": true
+        }
+      },
+      "y": {
+        "field": "type",
+        "type": "nominal",
+        "axis": {
+          "labels": false,
+          "ticks":false,
+          "domainWidth": 0,
+          "title": ""
+        },
+        "sort" : [
+"JDK21 (default CDS)", "JDK24 (default CDS)", "JDK24 (static CDS)", "JDK24 (dynamic CDS)", "JDK24 (JEP 483)", "Leyden", "Leyden (PreloadOnly)", "Graal (CE)", "Graal (EE)", "Graal (EE G1)", "Graal (EE PGO)", "Graal (EE G1 PGO)"
+        ]
+      }
+    },
+    "layer": [{
+      "mark": "bar",
+      "encoding": {
+        "color": {
+          "field": "type",
+          "type": "nominal",
+          "legend": {
+            "title" : "",
+            "offset" : null,
+            "zindex": 1
+          },
+          "sort" : [
+"JDK21 (default CDS)", "JDK24 (default CDS)", "JDK24 (static CDS)", "JDK24 (dynamic CDS)", "JDK24 (JEP 483)", "Leyden", "Leyden (PreloadOnly)", "Graal (CE)", "Graal (EE)", "Graal (EE G1)", "Graal (EE PGO)", "Graal (EE G1 PGO)"
+          ]
+        }
+      }
+    }, {
+      "mark": {
+        "type": "text",
+        "dx": 5,
+        "angle": 0,
+        "baseline": "middle",
+        "align": "left"
+      },
+      "encoding": {
+        "text": {
+          "field": "percentage",
+          "type": "nominal",
+          "format": ".0%"
+        }
+      }
+    }]
+  },
+  "config": {
+    "view": {"stroke": "transparent"},
+    "axis": {"domainWidth": 1}
+  }
+}
